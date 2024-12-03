@@ -1,6 +1,12 @@
 spring:
   application:
     name: edge-service
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: user
+    password: password
+    connection-timeout: 5s
 
 server:
   port: 80
