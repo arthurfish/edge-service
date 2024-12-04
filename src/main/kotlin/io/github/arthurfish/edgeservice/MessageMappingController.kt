@@ -1,5 +1,6 @@
 package io.github.arthurfish.edgeservice
 
+import org.springframework.amqp.core.MessageBuilder
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.context.request.async.DeferredResult
@@ -9,32 +10,36 @@ import java.util.*
 @RequestMapping("/message")
 class MessageMappingController(
   private val rabbitTemplate: RabbitTemplate,
-  private val responseHandler: ResponseHandler
+  private val responseCompleteService: ResponseCompleteService
 ) {
 
   @PostMapping
-  fun sendMessage(@RequestBody message: Map<String, String>): DeferredResult<String> {
+  fun sendMessage(@RequestBody requestJson: RequestJsonMessageModel): DeferredResult<String> {
     val requestId = UUID.randomUUID().toString() // 生成唯一 requestId
     val deferredResult = DeferredResult<String>(5000L) // 超时时间 5 秒
-    val topic = message.getOrDefault("topic", "default-topic")
+    val topic = requestJson.topic
 
     // 添加 requestId 到消息
-    val rabbitMessage = message.toMutableMap()
+    val rabbitMessage = requestJson.payload.toMutableMap()
     rabbitMessage["requestId"] = requestId
 
     // 将 DeferredResult 与 requestId 关联
-    responseHandler.registerRequest(requestId, deferredResult)
+    responseCompleteService.registerRequest(requestId, deferredResult)
 
+    val message = MessageBuilder.withBody(rabbitMessage.toString().toByteArray())
+      .copyHeaders(requestJson.headers)
+      .setContentType("application/json")
+      .build()
     // 将消息发送到 RabbitMQ
     rabbitTemplate.convertAndSend(
       "appender-core-exchange", // 交换机名称
       topic, // 路由键
-      rabbitMessage
+      message
     )
 
     // 处理超时逻辑
     deferredResult.onTimeout {
-      responseHandler.removeRequest(requestId)
+      responseCompleteService.removeRequest(requestId)
       deferredResult.setErrorResult("Request timed out.")
     }
 

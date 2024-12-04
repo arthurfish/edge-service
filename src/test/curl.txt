@@ -1,0 +1,9 @@
+ curl -X POST http://localhost:8080/message      -H "Content-Type: application/json"      -d '{
+           "headers": {
+             "user_operation": "query_info"
+           },
+           "topic": "operation.user",
+           "payload": {
+             "user_id": "4"
+           }
+         }'
