@@ -1,6 +1,9 @@
 package io.github.arthurfish.edgeservice
 
+import org.slf4j.LoggerFactory
 import org.springframework.amqp.rabbit.annotation.RabbitListener
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.web.context.request.async.DeferredResult
 import java.util.concurrent.ConcurrentHashMap
@@ -10,14 +13,15 @@ class ResponseConsumer(
   private val responseCompleteService: ResponseCompleteService
 ) {
 
-  @RabbitListener(queues = ["response-queue"])
-  fun handleResponse(message: Map<String, Any>) {
-    val requestId = message["requestId"] as? String
-    val result = message["result"] as? String
+  private val log = LoggerFactory.getLogger(ResponseConsumer::class.java)
 
-    if (requestId != null && result != null) {
+  @RabbitListener(queues = ["response-queue"])
+  fun handleResponse(message: Map<String, String>) {
+    val requestId = message["requestId"] as? String
+    log.info("Response-queue: ACTIVATE.")
+    if (requestId != null) {
       // 将响应映射回 HTTP 请求
-      responseCompleteService.completeRequest(requestId, result)
+      responseCompleteService.completeRequest(requestId, message.toString())
     }
   }
 }
@@ -40,8 +44,13 @@ class ResponseCompleteService {
    */
   fun completeRequest(requestId: String, response: String) {
     val deferredResult = requestMap.remove(requestId)
-    deferredResult?.setResult(response)
+    val responseEntity = ResponseEntity
+      .ok()
+      .contentType(MediaType.APPLICATION_JSON)
+      .body(response)
+    deferredResult?.setResult(responseEntity.toString())
   }
+
 
   /**
    * 移除超时的请求

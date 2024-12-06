@@ -5,6 +5,9 @@ import org.springframework.amqp.core.BindingBuilder
 import org.springframework.amqp.core.HeadersExchange
 import org.springframework.amqp.core.Queue
 import org.springframework.amqp.core.TopicExchange
+import org.springframework.amqp.rabbit.connection.ConnectionFactory
+import org.springframework.amqp.rabbit.core.RabbitTemplate
+import org.springframework.amqp.support.converter.MessageConverter
 import org.springframework.amqp.support.converter.SimpleMessageConverter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -13,10 +16,13 @@ import org.springframework.messaging.handler.annotation.Header
 @Configuration
 class RabbitMqConfig {
   @Bean
-  fun converter(): SimpleMessageConverter {
-    val converter = SimpleMessageConverter();
-    converter.setAllowedListPatterns(listOf("io.github.arthurfish.edgeservice.*", "java.util.*"));
-    return converter;
+  fun converter(): MessageConverter = AppenderRabbitmqMessageConverter()
+
+  @Bean
+  fun rabbitTemplate(connectionFactory: ConnectionFactory, converter: MessageConverter): RabbitTemplate {
+    return RabbitTemplate(connectionFactory).apply {
+      messageConverter = converter()
+    }
   }
 
   @Bean
@@ -26,7 +32,7 @@ class RabbitMqConfig {
   fun responseQueue() = Queue("response-queue", true) // 持久化队列
 
   @Bean
-  fun debugQueue() = Queue("response-queue", true) // 持久化队列
+  fun debugQueue() = Queue("debug-queue", true) // 持久化队列
 
   @Bean
   fun responseBinding(
@@ -35,7 +41,7 @@ class RabbitMqConfig {
   ): Binding {
     return BindingBuilder.bind(responseQueue)
       .to(appenderCoreExchange)
-      .whereAny("user_operation_result").exist()
+      .whereAny("debug").exist()
   }
 
   @Bean

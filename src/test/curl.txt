@@ -4,6 +4,7 @@
            },
            "topic": "operation.user",
            "payload": {
-             "user_id": "4"
+             "user_id": "aba81f78-2b1d-4b85-8053-5e8bdbb7c7e3",
+             "user_operation": "query_info"
            }
          }'
