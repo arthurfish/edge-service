@@ -3,8 +3,25 @@ package io.github.arthurfish.edgeservice
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.core.Message
 import org.springframework.amqp.core.MessageProperties
+import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.amqp.support.converter.AbstractMessageConverter
 import java.nio.charset.Charset
+
+class AppenderRabbitMqTemplate{
+  companion object{
+    fun sendToRabbitMq(rabbitTemplate: RabbitTemplate, message: Map<String, String>, excludeKey: String? = null, exchangeName: String = "appender-core-exchange") {
+      val processedMessage = if (excludeKey != null){ message.minus(excludeKey) }else message
+      rabbitTemplate.convertAndSend(
+        exchangeName,
+        "default.key",
+        processedMessage
+      ){
+          msg -> message.forEach{(k, v) -> msg.messageProperties.headers[k] = v}
+        msg
+      }
+    }
+  }
+}
 
 class AppenderRabbitmqMessageConverter : AbstractMessageConverter() {
   private val log = LoggerFactory.getLogger(AppenderRabbitmqMessageConverter::class.java)

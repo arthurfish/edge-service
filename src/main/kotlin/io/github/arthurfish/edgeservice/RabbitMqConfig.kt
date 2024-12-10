@@ -35,7 +35,7 @@ class RabbitMqConfig {
   fun debugQueue() = Queue("debug-queue", true) // 持久化队列
 
   @Bean
-  fun responseBinding(
+  fun responseBindingAboutChannelOperationResult(
     responseQueue: Queue,
     appenderCoreExchange: HeadersExchange
   ): Binding {
@@ -43,6 +43,8 @@ class RabbitMqConfig {
       .to(appenderCoreExchange)
       .whereAny("channel_operation_result", "request_id").exist()
   }
+
+
 
   @Bean
   fun debugBinding(debugQueue: Queue, exchange: HeadersExchange): Binding {
