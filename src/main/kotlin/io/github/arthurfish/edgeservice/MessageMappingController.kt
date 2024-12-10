@@ -23,7 +23,7 @@ class MessageMappingController(
 
     // 添加 requestId 到消息
     val rabbitMessage = requestJson.payload.toMutableMap()
-    rabbitMessage["requestId"] = requestId
+    rabbitMessage["request_id"] = requestId
 
     // 将 DeferredResult 与 requestId 关联
     responseCompleteService.registerRequest(requestId, deferredResult)

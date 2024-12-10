@@ -18,7 +18,7 @@ class ResponseConsumer(
   @RabbitListener(queues = ["response-queue"])
   fun handleResponse(message: Map<String, String>) {
     val requestId = message["requestId"] as? String
-    log.info("Response-queue: ACTIVATE.")
+    log.info("handle response. message: $message.")
     if (requestId != null) {
       // 将响应映射回 HTTP 请求
       responseCompleteService.completeRequest(requestId, message.toString())

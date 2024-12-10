@@ -18,10 +18,10 @@ class BlockSyncRabbitMqConfig {
 
   @Bean
   fun responseBindingAboutPlainBlockOperationResult(
-    responseQueue: Queue,
+    blockSyncQueue: Queue,
     appenderCoreExchange: HeadersExchange
   ): Binding {
-    return BindingBuilder.bind(responseQueue)
+    return BindingBuilder.bind(blockSyncQueue)
       .to(appenderCoreExchange)
       .whereAll("channel_block_result", "request_id").exist()
   }
@@ -39,6 +39,7 @@ class BlockResponseHandler(private val rabbitTemplate: RabbitTemplate,
 
   @RabbitListener(queues = ["#{blockSyncQueue.name}"])
   fun blockSyncHandle(message: Map<String, String>){
+    log.info("block sync handle. message: $message")
     val channelBlockResult = message["channel_block_result"]!!
     val requestId = message["request_id"]!!
     if(channelBlockResult == "block_accepted"){
@@ -46,7 +47,7 @@ class BlockResponseHandler(private val rabbitTemplate: RabbitTemplate,
     }else if(channelBlockResult == "syncing"){
       syncBlockCache.add(message)
     }else if(channelBlockResult == "sync_complete"){
-      completeService.completeRequest(requestId, message.toString())
+      completeService.completeRequest(requestId, syncBlockCache.toString())
     }
   }
 }
