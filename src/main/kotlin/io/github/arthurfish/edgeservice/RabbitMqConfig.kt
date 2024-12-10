@@ -41,7 +41,7 @@ class RabbitMqConfig {
   ): Binding {
     return BindingBuilder.bind(responseQueue)
       .to(appenderCoreExchange)
-      .whereAny("debug").exist()
+      .whereAny("channel_operation_result", "request_id").exist()
   }
 
   @Bean
